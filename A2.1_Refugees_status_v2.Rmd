@@ -1,0 +1,297 @@
+---
+title: "A2.1: Refugee Status"
+author: "Sumaio Abdullahi Rage"
+date: "2024-02-24"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Executive summary
+
+**The Refugee Crisis of the 2000s: The Unrest, War, and Humanitarian Challenges in Asia and Africa**
+
+```{r image}
+knitr::include_graphics("/Users/sumayahrageah/Documents/A2.1/data/Dashboard.png")
+```
+
+
+
+The 21st century has a series of conflicts, political upheavals, and humanitarian crises that precipitated one of the most significant refugee crises of modern times. As the world is progressing with advancement in science and technology at one end, there are parts of the world grappled with geopolitical shifts and internal strife, millions of individuals were displaced from their homes, forced to flee in search of safety and refuge. From the sprawling plains of Myanmar to the war-torn streets of Iraq and the famine-stricken lands of Somalia, the early 2000s bore witness to a convergence of crises that would test the resilience of nations and the global community alike.
+
+The refugees migrating to US in the timeline 2006 to 2015 was observed and the highest numbers were observed in refugees from Iraq, Myanmar and Somalia. The unrest and challenges in parts of Asia and Africa make it challenging to lead a normal lifestyle, mainly due to political unrest and geopolitical issues, affecting gigantic number of refugees from Asia and Africa settling in US in refugee camps.
+
+As we see the spike in the line chart in 2007, Myanmar had geopolitical issues and civil war in 2007 that led to the Saffron revolution, leading to hike in prices of oil and fuel. This time period showed political unrest, ethnic conflicts, and human rights abuses and thus, we see the high number of refugees moving out of Myanmar.
+
+In 2006, the human rights situation worsened significantly in Iraq.The continuing armed conflict became increasingly sectarian in nature, with many commentators declaring the onset of a civil war, reflecting in the spike in 2007- 2008 number of Refugees from Iraq.After the 2003 US invasion and again during the heightened violence brought on by Islamic state terror attacks during this time period, millions of Iraqis were displaced. Engineers, lawyers, doctors and other professionals were among the first to escape the war. The war situation is the country caused worsening of the healthcare system and people moved out in flocks, leaving their homeland and residing in US as refugees.
+
+The famine of 2011 in Somalia, followed by the civil war caused a great number of Somali refugees leave Somalia, as seen in the line chart.Number of Somali refugees increased in 2014, they all speak of the grim situation in the country, marked by relentless violence and human rights abuse. Somali refugees were forced to conscription by some of the warring parties and the crippling famine took away lives, forcing them to leave Somalia.
+
+
+We see that in this advanced era, war and political crisis are negatively impacting human rights and forcing people to leave their homeland. Overcoming this ironical situation is a challenge to humanity today.
+
+
+**The Principles of CRAP**
+
+In designing the refugee trends visualizations, we meticulously applied the CRAP design principles to ensure an effective presentation of the data. For contrast, we chose distinctive colors and font styles to clearly
+differentiate between the data of each country, ensuring that each stood out for easy identification and
+comparison.Repetition was maintained throughout the design elements to create a cohesive look and feel, using the same color schemes and font styles across the different visualizations to aid in viewer recognition and retention. Alignment was carefully managed to give the visuals a clean and organized layout, with each element positioned in a way that created a clear, logical flow for the eye to follow. Lastly, proximity was employed to group related elements together, using strategic placement and visual cues to indicate related data points and annotations, thus facilitating an intuitive understanding of complex data relationships. These design principles collectively enhanced the clarity, cohesiveness, and interpretability of the visual data, making the information both compelling and accessible to the audience.
+
+
+**Kieran Healy’s principles of great visualizations:**
+
+In applying Kieran Healy’s principles of effective data visualization to analyze refugee status dataset, several crucial elements were considered to ensure clarity, comprehensibility, and relevance. Firstly, a line graph was chosen to depict refugee counts over time, aligning with the principle of selecting an appropriate graph type for the data's nature. This graph effectively displays changes and trends over time, facilitating comparison between the three countries.
+
+Distinct colors were applied to each country's line within the graph, in accordance with the principle of using color effectively. This differentiation aids quick identification of each trend line, preventing confusion and enhancing intuitive comparison.
+
+Additionally, an annotated event for Myanmar in 2007 and Iraq and 2008 was included within the visualization, aligning with Healy's encouragement to provide context directly within the visualization. This correlation of specific data points with historical events helps viewers understand the underlying story behind the trends observed.
+
+Lastly, the visualization process aimed to strike a balance between complexity and simplicity, following Healy’s principle. The visuals are sufficiently complex to convey depth of information, yet simple enough for a broad audience without specialized knowledge to understand. This equilibrium ensures that the visualizations effectively inform and engage audiences on the complex issue of refugee movements in response to crises.
+
+
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(scales) #for nice labels in charts
+library(countrycode)
+library(plotly)
+library(rnaturalearth)
+library(sf)
+library(ggplot2)
+
+
+
+refugee <- read_csv("data/A2_refugee_status.csv")
+
+refugee
+
+```
+
+
+
+```{r}
+#Handling non-numeric values
+refugee_data <- refugee %>%
+  mutate(across(starts_with("2006"):starts_with("2015"), 
+                ~ifelse(!grepl("^-|X|D$", .), as.integer(gsub(",", "", .)), as.integer(NA))))
+
+# Checking the changes
+refugee_data
+
+```
+
+
+```{r}
+# List of country names to keep
+countries_to_keep <- c("Afghanistan", "Angola", "Armenia", "Azerbaijan", "Belarus", "Bhutan", "Bosnia-Herzegovina","Burma", "Burundi", "Cambodia", "Cameroon", "Central African Republic", "Chad", "China, People's Republic", "Colombia", "Congo, Democratic Republic", "Congo, Republic", "Cote d'Ivoire", "Cuba", "Egypt", "Equatorial Guinea", "Eritrea", "Ethiopia", "Gambia", "Georgia", "Haiti", "Honduras", "Indonesia", "Iran", "Iraq", "Jordan", "Kazakhstan", "Kenya", "Korea, North", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Liberia", "Mauritania", "Moldova", "Nepal", "Nigeria", "Pakistan", "Russia", "Rwanda", "Serbia", "Sierra Leone", "Somalia", "South Sudan", "Sri Lanka", "Sudan", "Syria", "Togo", "Uganda", "Ukraine", "Uzbekistan", "Vietnam", "Yemen", "Zimbabwe")
+
+# Filter to keep only specific countries
+refugee_data_filtered <- refugee_data %>%
+  filter(`Continent/Country of Nationality` %in% countries_to_keep)
+
+# Checking the changes
+refugee_data_filtered
+
+```
+
+
+```{r}
+refugees_data_clean <- refugee_data_filtered %>%
+  # Make this column name easier to work with
+  rename(Countries = `Continent/Country of Nationality`) %>%
+  
+  # Convert country names to ISO3 codes
+  mutate(iso3 = countrycode(Countries, "country.name", "iso3c",
+                            custom_match = c("Korea, North" = "PRK"))) %>%
+  # Convert ISO3 codes to country names, regions, and continents
+  mutate(Countries = countrycode(iso3, "iso3c", "country.name"),
+         Continent = countrycode(iso3, "iso3c", "continent"))
+refugees_data_clean
+
+```
+
+
+```{r}
+refugee_tidy <-  refugees_data_clean %>%
+  pivot_longer(cols = c(`2006`, `2007`, `2008`, `2009`, `2010`, `2011`, `2012`, `2013`, `2014`, `2015`), names_to = "year", values_to = "RefugeeStatusCount")
+
+refugee_tidy
+
+```
+
+
+```{r}
+refugee_tidy <- refugee_tidy %>%
+  mutate(year = as.integer(year),
+         year_date = ymd(paste0(year, "-01-01")))
+refugee_tidy
+```
+
+```{r}
+top_10_countries <- refugee_tidy %>%
+  group_by(Countries) %>%
+  summarise(total_refugees = sum(RefugeeStatusCount)) %>%
+  top_n(10, total_refugees) %>%
+  arrange(desc(total_refugees))
+
+top_10_countries
+```
+
+
+```{r}
+my_pretty_theme <- theme_minimal(base_family = "Helvetica", base_size = 12) +
+  theme(panel.grid.minor = element_blank(),
+        # Bold, bigger, centered title
+        plot.title = element_text(face = "bold", size = rel(1.6), hjust = 0.5),
+        # Plain, slightly bigger, centered subtitle that is grey
+        plot.subtitle = element_text(face = "plain", size = rel(1.1), color = "grey70", hjust = 0.5),
+        # Italic, smaller, grey caption that is centered
+        plot.caption = element_text(face = "italic", size = rel(0.7), color = "grey70", hjust = 0.5),
+        # Bold, centered legend titles
+        legend.title = element_text(face = "bold", hjust = 0.5),
+        # Bold, slightly larger, centered facet titles
+        strip.text = element_text(face = "bold", size = rel(1.2), hjust = 0.5),
+        # Bold, centered axis titles
+        axis.title = element_text(face = "bold", hjust = 0.5),
+        # Centered x-axis title with space above
+        axis.title.x = element_text(margin = margin(t = 10), hjust = 0.5),
+        # Centered y-axis title with space to the right
+        axis.title.y = element_text(margin = margin(r = 10), vjust = 0.5),
+        # Add a light grey background to the centered facet titles, with no borders
+        strip.background = element_rect(fill = "grey90", color = NA),
+        # Add a thin grey border around all the plots to tie in the facet titles
+        panel.border = element_rect(color = "grey90", fill = NA))
+
+
+```
+
+
+
+```{r}
+Country_1 <- c("Myanmar (Burma)", "Iraq", "Somalia")
+
+refugee_tidy_top_3 <- refugee_tidy %>%
+  filter(Countries %in% Country_1)
+
+# Define a custom color palette with dark orange shades
+colors <- c("#564B00", "#CB9E00", "#FFD460")  # Dark orange variations for each country
+
+base_plot <- ggplot(data = refugee_tidy_top_3,
+                   mapping = aes(x = year_date, y = RefugeeStatusCount,
+                                color = factor(Countries, levels = Country_1))) +
+  geom_line(size = 1.05) +  # Increase line thickness
+  scale_y_continuous(labels = comma) +
+  scale_color_manual(values = colors) +
+  labs(x = "Year", y = "Refugee Status Count",
+       color = "Country",
+       title = "Trend of Refugee Status Count Over the Years",
+       subtitle = "civil war 2007-2008  in Myanmar and Iraq",
+       caption = "Source: Data file [A2_refugee_status.csv]") +
+  annotate("rect", xmin = as.Date("2006-10-01"), xmax = as.Date("2008-04-01"),            
+           ymin = 12000, ymax = 15000, alpha = .3, fill = "#FFBB03") + # Dark orange color for the annotation
+
+  my_pretty_theme
+base_plot
+
+# Save the plot
+ggsave(base_plot, filename = "Refugee_status_by_Countries.png", width = 12, height = 10)
+```
+
+
+```{r}
+# Filter the dataset for the year 2015
+refugee_2015 <- refugee_tidy %>%
+  filter(year == 2015)
+
+# Load a world map with Mercator projection, then filter for Asia, Africa, and North America
+world <- ne_countries(scale = "medium", returnclass = "sf") %>%
+  st_transform(crs = 3395) %>%
+  filter(continent %in% c("Asia", "Africa"))
+
+# Merge the spatial data with the refugee data
+world_with_refugees <- world %>%
+  left_join(refugee_2015, by = c("iso_a3" = "iso3"))
+
+# Plotting with a gradient of dark orange
+p2 <- ggplot(data = world_with_refugees) +
+  geom_sf(aes(fill = RefugeeStatusCount), color = "#8F6F09", size = 0.25) +
+  scale_fill_gradient(low = "#FFD43B", high = "#514301", 
+                      na.value = "white", name = "Refugees Admitted") +
+  coord_sf(crs = st_crs(3395)) +
+  theme_void() +
+  theme(text = element_text(size = 12)) +
+  labs(title = "Refugees Admitted to the US in 2015.",
+       subtitle = "Total Numbers of Asian and African refugees",
+       caption = "Data source: Provided dataset")+
+
+my_pretty_theme
+p2
+
+# Save the plot
+ggsave(p2, filename = "Refugee_status_by_Map.png", width = 12, height = 10)
+
+```
+
+
+```{r}
+library(reshape2) # melt()
+library(plyr)
+
+
+# Melt the data to long format
+refugee_long <- melt(refugee_tidy, id.vars = c("year_date", "Continent"),
+                     measure.vars = "RefugeeStatusCount",
+                     variable.name = "RefugeeStatus", value.name = "Count")
+
+# Reorder the levels of the 'Continent' factor variable
+refugee_long$Continent <- factor(refugee_long$Continent,
+                                 levels = c("Europe", "Americas", "Africa", "Asia"))
+
+# Plot
+p <- ggplot(refugee_long, aes(x = year_date, y = Count, fill = Continent)) + 
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("#FFD43B", "#D6C000","#E5AC02", "#977E0E")) +  #Continent for colors
+  labs(x = "Year", y = "RefugeeStatusCount", fill = "Continent") +
+  ggtitle("Refugee Status by Continent Over Time") +
+  theme_bw() +
+  theme(plot.title = element_text(size = rel(1.2), face = "bold"),
+        legend.position = "bottom")+
+
+my_pretty_theme
+
+print(p)
+
+# Save the plot
+ggsave(p, filename = "Refugee_status_by_Continent.png", width = 10, height = 6)
+```
+
+
+
+*References:*
+
+2007: Myanmar (Burma) political unrest causing Saffron Revolution
+https://rpl.hds.harvard.edu/faq/saffron-revolution#:~:text=The%20military%20government's%20decision%20to,traditional%20color%20of%20monks'%20robes.
+
+2008: Iraqi civil war between 2006 and 2008
+https://www.cfr.org/timeline/iraq-war
+
+
+2011: Somalia Civil war and famine
+https://www.hrw.org/report/2011/08/14/you-dont-know-who-blame/war-crimes-somalia
+https://www.unhcr.org/us/news/briefing-notes/number-somali-refugees-grows-sharply-2011
+
+
+
+
+
